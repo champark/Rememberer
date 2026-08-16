@@ -17,6 +17,10 @@ MIN_ROUNDS = 1
 MAX_ROUNDS = 100
 
 SHOW_TIME = 5
+ANSWER_TIME = 5
+
+# 한 문제 결과를 보여주는 시간
+RESULT_SHOW_TIME = 1.5
 
 
 ITEMS = [
@@ -35,9 +39,9 @@ ITEMS = [
 ]
 
 
-# --------------------------------------------
-# 프로젝트 디렉토리 / 로그 파일
-# --------------------------------------------
+# ============================================
+# 프로젝트 디렉토리 / 로그
+# ============================================
 
 PROJECT_DIR = Path(__file__).resolve().parent
 LOG_FILE = PROJECT_DIR / "memory_game_log.txt"
@@ -52,9 +56,6 @@ def clear_screen():
 # ============================================
 
 def choose_item_count():
-    """
-    기억할 물건 개수 선택
-    """
 
     while True:
         clear_screen()
@@ -78,26 +79,19 @@ def choose_item_count():
             if MIN_ITEMS <= count <= MAX_ITEMS:
                 return count
 
-            print()
-            print(
-                f"{MIN_ITEMS} 이상 "
-                f"{MAX_ITEMS} 이하로 입력하세요."
-            )
-
         except ValueError:
-            print()
-            print("숫자를 입력하세요.")
+            pass
 
-        time.sleep(1.5)
+        print()
+        print(
+            f"{MIN_ITEMS} 이상 "
+            f"{MAX_ITEMS} 이하의 숫자를 입력하세요."
+        )
+
+        time.sleep(1)
 
 
 def choose_round_count():
-    """
-    연속 플레이 횟수 선택
-
-    아무것도 입력하지 않고 Enter:
-    기본값 10회
-    """
 
     while True:
         clear_screen()
@@ -109,8 +103,9 @@ def choose_round_count():
 
         print("몇 번 연속으로 플레이하시겠습니까?")
         print()
+
         print(
-            f"그냥 Enter를 누르면 기본값 "
+            f"아무것도 입력하지 않으면 "
             f"{DEFAULT_ROUNDS}회입니다."
         )
         print()
@@ -119,7 +114,6 @@ def choose_round_count():
             f"횟수 ({MIN_ROUNDS} ~ {MAX_ROUNDS}): "
         ).strip()
 
-        # 아무것도 입력하지 않은 경우
         if value == "":
             return DEFAULT_ROUNDS
 
@@ -129,44 +123,49 @@ def choose_round_count():
             if MIN_ROUNDS <= count <= MAX_ROUNDS:
                 return count
 
-            print()
-            print(
-                f"{MIN_ROUNDS} 이상 "
-                f"{MAX_ROUNDS} 이하로 입력하세요."
-            )
-
         except ValueError:
-            print()
-            print("숫자를 입력하세요.")
+            pass
 
-        time.sleep(1.5)
+        print()
+        print(
+            f"{MIN_ROUNDS} 이상 "
+            f"{MAX_ROUNDS} 이하의 숫자를 입력하세요."
+        )
+
+        time.sleep(1)
 
 
 # ============================================
 # 기억 단계
 # ============================================
 
-def show_memory_items(memory_items, round_number, total_rounds):
-    """
-    외워야 할 물건을 보여준다.
-    """
+def show_memory_items(
+    memory_items,
+    round_number,
+    total_rounds
+):
 
     clear_screen()
 
     print("=" * 50)
     print(
-        f"       {round_number} / {total_rounds} 회"
+        f"        {round_number} / {total_rounds} 회"
     )
     print("=" * 50)
     print()
     print("기억하세요!")
     print()
 
-    for i, item in enumerate(memory_items, start=1):
+    for i, item in enumerate(
+        memory_items,
+        start=1
+    ):
         print(f"{i:2}. {item}")
 
     print()
-    print(f"{SHOW_TIME}초 후 사라집니다.")
+    print(
+        f"{SHOW_TIME}초 후 자동으로 사라집니다."
+    )
 
     time.sleep(SHOW_TIME)
 
@@ -178,14 +177,6 @@ def show_memory_items(memory_items, round_number, total_rounds):
 # ============================================
 
 def make_choices(memory_items):
-    """
-    정답 물건 수만큼 오답을 추가한다.
-
-    예:
-    5개 기억
-    -> 정답 5개 + 오답 5개
-    -> 총 10개
-    """
 
     memory_count = len(memory_items)
 
@@ -213,13 +204,12 @@ def show_choices(
     round_number,
     total_rounds
 ):
-    """
-    선택지 표시
-    """
+
+    clear_screen()
 
     print("=" * 50)
     print(
-        f"       {round_number} / {total_rounds} 회"
+        f"        {round_number} / {total_rounds} 회"
     )
     print("=" * 50)
     print()
@@ -227,82 +217,85 @@ def show_choices(
     print("방금 본 물건을 모두 고르세요.")
     print()
 
-    for i, item in enumerate(choices, start=1):
+    for i, item in enumerate(
+        choices,
+        start=1
+    ):
         print(f"{i:2}. {item}")
 
     print()
     print(
-        f"기억한 {memory_count}개의 번호를 "
-        f"공백으로 구분해서 입력하세요."
+        f"{memory_count}개의 번호를 "
+        "공백으로 구분해서 입력하세요."
     )
-    print()
-    print("예: 1 3 5 7")
+
+    print(
+        f"답변 제한 시간: {ANSWER_TIME}초"
+    )
+
     print()
 
 
 # ============================================
-# 플레이어 입력
+# 플레이어 답변
 # ============================================
 
 def get_player_choices(choices, memory_count):
+    """
+    플레이어의 답변을 받는다.
 
-    while True:
+    Enter를 누른 시점까지 걸린 시간을 측정하고,
+    ANSWER_TIME을 넘겼으면 시간 초과로 처리한다.
+    """
 
-        raw = input(
-            f"{memory_count}개 선택: "
-        ).strip()
+    start_time = time.time()
 
-        parts = raw.split()
+    raw = input("선택: ").strip()
 
-        if len(parts) != memory_count:
-            print()
-            print(
-                f"정확히 {memory_count}개의 번호를 "
-                "선택해야 합니다."
-            )
-            print()
-            continue
+    elapsed_time = time.time() - start_time
+
+    # 제한시간 초과
+    if elapsed_time > ANSWER_TIME:
+        print()
+        print(
+            f"시간 종료! "
+            f"({elapsed_time:.1f}초 / 제한 {ANSWER_TIME}초)"
+        )
+        time.sleep(0.8)
+        return []
+
+    if not raw:
+        return []
+
+    parts = raw.split()
+
+    numbers = []
+
+    for part in parts:
 
         try:
-            numbers = [
-                int(number)
-                for number in parts
-            ]
+            number = int(part)
 
         except ValueError:
-            print()
-            print("숫자만 입력하세요.")
-            print()
             continue
 
-        # 번호 범위 검사
-        if any(
-            number < 1 or number > len(choices)
-            for number in numbers
+        # 유효한 번호이고 중복이 아닌 경우만 추가
+        if (
+            1 <= number <= len(choices)
+            and number not in numbers
         ):
-            print()
-            print(
-                f"1 ~ {len(choices)} 사이의 "
-                "번호를 입력하세요."
-            )
-            print()
-            continue
+            numbers.append(number)
 
-        # 중복 선택 검사
-        if len(set(numbers)) != len(numbers):
-            print()
-            print(
-                "같은 번호를 두 번 선택할 수 없습니다."
-            )
-            print()
-            continue
+    # 필요한 개수보다 많이 입력했으면
+    # 앞쪽 번호만 사용
+    numbers = numbers[:memory_count]
 
-        selected_items = [
-            choices[number - 1]
-            for number in numbers
-        ]
+    selected_items = [
+        choices[number - 1]
+        for number in numbers
+    ]
 
-        return selected_items
+    return selected_items
 
 
 # ============================================
@@ -337,7 +330,7 @@ def calculate_result(
 
 
 # ============================================
-# 한 판 결과 표시
+# 한 문제 결과
 # ============================================
 
 def show_round_result(
@@ -347,18 +340,23 @@ def show_round_result(
     total_rounds
 ):
 
+    clear_screen()
+
     correct = result["correct_count"]
 
     accuracy = (
         correct / memory_count
     ) * 100
 
+    print("=" * 50)
+    print(
+        f"        {round_number} / {total_rounds} 회"
+    )
+    print("=" * 50)
     print()
-    print("-" * 50)
 
     print(
-        f"{round_number}회 결과: "
-        f"{correct} / {memory_count}"
+        f"결과: {correct} / {memory_count}"
     )
 
     print(
@@ -366,19 +364,17 @@ def show_round_result(
     )
 
     if correct == memory_count:
+        print()
         print("완벽!")
 
-    print("-" * 50)
     print()
+    print("다음 문제로 넘어갑니다...")
 
-    if round_number < total_rounds:
-        input(
-            "Enter를 누르면 다음 문제로 넘어갑니다..."
-        )
+    time.sleep(RESULT_SHOW_TIME)
 
 
 # ============================================
-# 전체 결과
+# 최종 결과
 # ============================================
 
 def show_final_result(
@@ -410,7 +406,7 @@ def show_final_result(
     )
 
     print("=" * 50)
-    print("              최종 결과")
+    print("               최종 결과")
     print("=" * 50)
     print()
 
@@ -461,11 +457,6 @@ def save_log(
     item_count,
     round_results
 ):
-    """
-    한 세션의 결과를 한꺼번에 기록한다.
-
-    물건 이름은 저장하지 않는다.
-    """
 
     now = datetime.now()
 
@@ -503,6 +494,8 @@ def save_log(
         f"게임        : 1단계 기억력 게임\n"
         f"기억 개수   : {item_count}개\n"
         f"플레이 횟수 : {total_rounds}회\n"
+        f"암기 시간   : {SHOW_TIME}초\n"
+        f"답변 제한   : {ANSWER_TIME}초\n"
         f"총 정답     : "
         f"{total_correct}/{total_questions}\n"
         f"전체 정답률 : {accuracy:.1f}%\n"
@@ -517,6 +510,7 @@ def save_log(
         "a",
         encoding="utf-8"
     ) as file:
+
         file.write(log_text)
 
 
@@ -526,56 +520,33 @@ def save_log(
 
 def play_game():
 
-    # 게임 시작 설정
     item_count = choose_item_count()
     total_rounds = choose_round_count()
 
     round_results = []
 
-    # 연속 플레이
+    # 설정 직후 바로 첫 문제 시작
     for round_number in range(
         1,
         total_rounds + 1
     ):
 
-        clear_screen()
-
-        print("=" * 50)
-        print(
-            f"       {round_number} / "
-            f"{total_rounds} 회"
-        )
-        print("=" * 50)
-        print()
-
-        print(
-            f"{item_count}개 기억하기"
-        )
-        print()
-
-        input(
-            "Enter를 누르면 시작합니다..."
-        )
-
-        # 이번 회차 기억 대상
         memory_items = random.sample(
             ITEMS,
             item_count
         )
 
-        # 기억 단계
+        # 자동으로 암기 화면 시작
         show_memory_items(
             memory_items,
             round_number,
             total_rounds
         )
 
-        # 선택지 생성
         choices = make_choices(
             memory_items
         )
 
-        # 선택지 표시
         show_choices(
             choices,
             item_count,
@@ -583,13 +554,11 @@ def play_game():
             total_rounds
         )
 
-        # 플레이어 선택
         selected_items = get_player_choices(
             choices,
             item_count
         )
 
-        # 결과 계산
         result = calculate_result(
             memory_items,
             selected_items
@@ -597,7 +566,8 @@ def play_game():
 
         round_results.append(result)
 
-        # 이번 회차 결과
+        # 결과를 잠깐 보여준 뒤
+        # 자동으로 다음 문제
         show_round_result(
             result,
             item_count,
@@ -605,13 +575,11 @@ def play_game():
             total_rounds
         )
 
-    # 전체 결과
     show_final_result(
         item_count,
         round_results
     )
 
-    # 로그 기록
     save_log(
         item_count,
         round_results
